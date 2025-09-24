@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Required Income Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        th, td {
+            white-space: nowrap;
+            padding: 0.75rem 1rem;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        td {
+            background-color: #ffffff;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        td:hover {
+            background-color: #f8fafc;
+        }
+        .invalid-cell {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            font-weight: 500;
+        }
+        .two-line-cell {
+            line-height: 1.25;
+            padding: 0.5rem 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center p-4">
+    <div class="max-w-7xl w-full bg-white shadow-xl rounded-2xl p-6 lg:p-10 my-8">
+        <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2 text-center">Required Income Calculator</h1>
+        <p class="text-gray-600 mb-8 text-center">The table below shows the required annual income for each property value and downpayment combination.</p>
+        
+        <!-- Input Parameters Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="flex flex-col">
+                <label for="interestRate" class="text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+                <input type="number" id="interestRate" value="5.5" step="0.1" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex flex-col">
+                <label for="incomeAllocation" class="text-sm font-medium text-gray-700 mb-1">Income Allocation (%)</label>
+                <input type="number" id="incomeAllocation" value="32" step="1" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex flex-col">
+                <label for="amortizationPeriod" class="text-sm font-medium text-gray-700 mb-1">Amortization Period (Years)</label>
+                <input type="number" id="amortizationPeriod" value="25" step="1" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <!-- Main Calculation Table -->
+        <div id="calculator-grid" class="table-container rounded-xl shadow-inner">
+            <!-- Table will be generated here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const propertyValues = [1200000, 1100000, 1000000, 900000, 800000, 700000, 600000];
+            const downpayments = [30000, 50000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000];
+
+            const gridContainer = document.getElementById('calculator-grid');
+            const interestRateInput = document.getElementById('interestRate');
+            const incomeAllocationInput = document.getElementById('incomeAllocation');
+            const amortizationPeriodInput = document.getElementById('amortizationPeriod');
+
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+
+            // Function to format a number as currency
+            function formatCurrency(number) {
+                return formatter.format(number);
+            }
+
+            // The core calculation logic
+            function calculateRequiredIncome(propertyValue, downpayment, interestRate, incomeAllocation, amortizationPeriod) {
+                const mortgageAmount = propertyValue - downpayment;
+                if (mortgageAmount <= 0) {
+                    return { mortgageAmount, requiredIncome: 0 }; // No loan needed
+                }
+
+                const monthlyRate = (interestRate / 100) / 12;
+                const numberOfPayments = amortizationPeriod * 12;
+
+                let monthlyPayment;
+                if (monthlyRate > 0) {
+                    monthlyPayment = mortgageAmount * (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+                } else {
+                    // Handle 0% interest rate
+                    monthlyPayment = mortgageAmount / numberOfPayments;
+                }
+
+                const requiredAnnualIncome = (monthlyPayment / (incomeAllocation / 100)) * 12;
+                return { mortgageAmount, requiredIncome: requiredAnnualIncome };
+            }
+
+            // Function to render the main grid table
+            function renderGrid() {
+                const interestRate = parseFloat(interestRateInput.value);
+                const incomeAllocation = parseFloat(incomeAllocationInput.value);
+                const amortizationPeriod = parseInt(amortizationPeriodInput.value);
+
+                let html = '<table class="w-full text-sm">';
+                
+                // Table Header (Property Values)
+                html += '<thead><tr><th class="bg-gray-200 text-gray-700 sticky-col">Downpayment</th>';
+                propertyValues.forEach(val => {
+                    html += `<th class="bg-gray-200 text-gray-700">${formatCurrency(val)}</th>`;
+                });
+                html += '</tr></thead>';
+
+                // Table Body (Downpayments & Calculated Values)
+                html += '<tbody>';
+                downpayments.forEach(dp => {
+                    html += `<tr><td class="bg-gray-200 text-gray-700 font-semibold">${formatCurrency(dp)}</td>`;
+                    propertyValues.forEach(pv => {
+                        const result = calculateRequiredIncome(pv, dp, interestRate, incomeAllocation, amortizationPeriod);
+                        
+                        let cellContent = '';
+                        let cellClass = '';
+
+                        if (result.mortgageAmount < 0) {
+                            cellContent = '<span class="font-bold text-green-700">No Loan</span>';
+                            cellClass = 'bg-green-100';
+                        } else if (isNaN(result.requiredIncome) || !isFinite(result.requiredIncome)) {
+                            cellContent = 'Invalid';
+                            cellClass = 'invalid-cell';
+                        } else {
+                            cellContent = `<div class="font-medium text-gray-800">${formatCurrency(result.mortgageAmount)}</div><div class="text-xs text-gray-500">Req. Inc: ${formatCurrency(result.requiredIncome)}</div>`;
+                            cellClass = 'two-line-cell';
+                        }
+                        html += `<td class="${cellClass}">${cellContent}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                gridContainer.innerHTML = html;
+            }
+
+            // Add event listeners to input fields to trigger a re-render
+            interestRateInput.addEventListener('input', renderGrid);
+            incomeAllocationInput.addEventListener('input', renderGrid);
+            amortizationPeriodInput.addEventListener('input', renderGrid);
+            
+            // Initial rendering of the grid
+            renderGrid();
+        });
+    </script>
+</body>
+</html>
+
