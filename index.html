@@ -49,8 +49,8 @@
             color: #b91c1c;
             font-weight: 500;
         }
-        .two-line-cell {
-            line-height: 1.25;
+        .three-line-cell {
+            line-height: 1.1;
             padding: 0.5rem 0.75rem;
         }
     </style>
@@ -58,10 +58,10 @@
 <body class="bg-gray-100 flex items-center justify-center p-4">
     <div class="max-w-7xl w-full bg-white shadow-xl rounded-2xl p-6 lg:p-10 my-8">
         <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2 text-center">Required Income Calculator</h1>
-        <p class="text-gray-600 mb-8 text-center">The table below shows the required annual income for each property value and downpayment combination.</p>
+        <p class="text-gray-600 mb-8 text-center">Enter your actual annual income to see the leftover value after the required mortgage payment.</p>
         
         <!-- Input Parameters Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="flex flex-col">
                 <label for="interestRate" class="text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
                 <input type="number" id="interestRate" value="5.5" step="0.1" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -73,6 +73,33 @@
             <div class="flex flex-col">
                 <label for="amortizationPeriod" class="text-sm font-medium text-gray-700 mb-1">Amortization Period (Years)</label>
                 <input type="number" id="amortizationPeriod" value="25" step="1" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex flex-col">
+                <label for="actualIncome" class="text-sm font-medium text-gray-700 mb-1">Actual Annual Income</label>
+                <input type="number" id="actualIncome" value="100000" step="1000" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-8 shadow-inner">
+            <h3 class="font-semibold text-gray-800 mb-2">Legend:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 text-sm text-gray-600 gap-y-2">
+                <div class="flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-gray-800 mr-2"></span>
+                    <span class="font-medium text-gray-800">Mortgage Amount</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-gray-500 mr-2"></span>
+                    <span class="font-medium text-gray-500">Required Annual Income (Monthly)</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-green-700 mr-2"></span>
+                    <span class="font-medium text-green-700">Annual Leftover Value (Monthly) - Surplus</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                    <span class="font-medium text-red-500">Annual Leftover Value (Monthly) - Deficit</span>
+                </div>
             </div>
         </div>
 
@@ -91,6 +118,7 @@
             const interestRateInput = document.getElementById('interestRate');
             const incomeAllocationInput = document.getElementById('incomeAllocation');
             const amortizationPeriodInput = document.getElementById('amortizationPeriod');
+            const actualIncomeInput = document.getElementById('actualIncome');
 
             const formatter = new Intl.NumberFormat('en-US', {
                 style: 'currency',
@@ -98,17 +126,29 @@
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             });
+            
+            const formatterMonthly = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
 
             // Function to format a number as currency
             function formatCurrency(number) {
                 return formatter.format(number);
+            }
+            
+            // Function to format a number as monthly currency
+            function formatMonthly(number) {
+                return formatterMonthly.format(number);
             }
 
             // The core calculation logic
             function calculateRequiredIncome(propertyValue, downpayment, interestRate, incomeAllocation, amortizationPeriod) {
                 const mortgageAmount = propertyValue - downpayment;
                 if (mortgageAmount <= 0) {
-                    return { mortgageAmount, requiredIncome: 0 }; // No loan needed
+                    return { mortgageAmount, requiredIncome: 0, monthlyPayment: 0 };
                 }
 
                 const monthlyRate = (interestRate / 100) / 12;
@@ -123,7 +163,7 @@
                 }
 
                 const requiredAnnualIncome = (monthlyPayment / (incomeAllocation / 100)) * 12;
-                return { mortgageAmount, requiredIncome: requiredAnnualIncome };
+                return { mortgageAmount, requiredIncome: requiredAnnualIncome, monthlyPayment };
             }
 
             // Function to render the main grid table
@@ -158,8 +198,26 @@
                             cellContent = 'Invalid';
                             cellClass = 'invalid-cell';
                         } else {
-                            cellContent = `<div class="font-medium text-gray-800">${formatCurrency(result.mortgageAmount)}</div><div class="text-xs text-gray-500">Req. Inc: ${formatCurrency(result.requiredIncome)}</div>`;
-                            cellClass = 'two-line-cell';
+                            const actualIncome = parseFloat(actualIncomeInput.value);
+                            const requiredIncome = result.requiredIncome;
+                            const monthlyRequiredIncome = requiredIncome / 12;
+                            
+                            let leftoverContent = 'Set Income';
+                            let leftoverClass = 'text-gray-500';
+
+                            if (!isNaN(actualIncome)) {
+                                const leftover = actualIncome - requiredIncome;
+                                const monthlyLeftover = leftover / 12;
+                                leftoverContent = `Leftover: ${formatCurrency(leftover)} (${formatMonthly(monthlyLeftover)})`;
+                                leftoverClass = leftover >= 0 ? 'text-green-700 font-semibold' : 'text-red-500 font-semibold';
+                            }
+                            
+                            cellContent = `
+                                <div class="text-sm font-medium text-gray-800">${formatCurrency(result.mortgageAmount)}</div>
+                                <div class="text-xs text-gray-500">Req. Inc: ${formatCurrency(requiredIncome)}<br>(${formatMonthly(monthlyRequiredIncome)})</div>
+                                <div class="text-xs ${leftoverClass}">${leftoverContent}</div>
+                            `;
+                            cellClass = 'three-line-cell';
                         }
                         html += `<td class="${cellClass}">${cellContent}</td>`;
                     });
@@ -174,6 +232,7 @@
             interestRateInput.addEventListener('input', renderGrid);
             incomeAllocationInput.addEventListener('input', renderGrid);
             amortizationPeriodInput.addEventListener('input', renderGrid);
+            actualIncomeInput.addEventListener('input', renderGrid);
             
             // Initial rendering of the grid
             renderGrid();
