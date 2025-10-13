@@ -201,7 +201,7 @@
                         } else {
                             const actualIncome = parseFloat(actualIncomeInput.value);
                             const requiredIncome = result.requiredIncome;
-                            const monthlyRequiredIncome = requiredIncome / 12;
+                            const monthlyPayment = result.monthlyPayment;
                             
                             let leftoverContent = 'Set Income';
                             let leftoverClass = 'text-gray-500';
@@ -220,7 +220,7 @@
                             
                             cellContent = `
                                 <div class="text-sm font-medium text-gray-800">Loan: ${formatCurrency(result.mortgageAmount)}</div>
-                                <div class="text-xs text-gray-500">Income Needed: ${formatCurrency(requiredIncome)}<br>(${formatMonthly(monthlyRequiredIncome)}/mo)</div>
+                                <div class="text-xs text-gray-500">Income Needed: ${formatCurrency(requiredIncome)}<br>(${formatMonthly(monthlyPayment)}/mo)</div>
                                 <div class="text-xs ${leftoverClass}">${leftoverContent}</div>
                             `;
                             cellClass = 'three-line-cell';
