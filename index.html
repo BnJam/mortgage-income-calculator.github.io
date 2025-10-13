@@ -82,23 +82,24 @@
 
         <!-- Legend -->
         <div class="bg-gray-50 rounded-lg p-4 mb-8 shadow-inner">
-            <h3 class="font-semibold text-gray-800 mb-2">Legend:</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 text-sm text-gray-600 gap-y-2">
+            <h3 class="font-semibold text-gray-800 mb-2">How to Read the Table:</h3>
+            <p class="text-sm text-gray-600 mb-3">Select a house price (column) and down payment (row) to see the required income and leftover amount.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 text-sm text-gray-600 gap-y-2">
                 <div class="flex items-center">
                     <span class="w-2 h-2 rounded-full bg-gray-800 mr-2"></span>
-                    <span class="font-medium text-gray-800">Mortgage Amount</span>
+                    <span class="font-medium text-gray-800">Mortgage Loan Amount</span>
                 </div>
                 <div class="flex items-center">
                     <span class="w-2 h-2 rounded-full bg-gray-500 mr-2"></span>
-                    <span class="font-medium text-gray-500">Required Annual Income (Monthly)</span>
+                    <span class="font-medium text-gray-500">Required Annual Income (Monthly Payment)</span>
                 </div>
                 <div class="flex items-center">
                     <span class="w-2 h-2 rounded-full bg-green-700 mr-2"></span>
-                    <span class="font-medium text-green-700">Annual Leftover Value (Monthly) - Surplus</span>
+                    <span class="font-medium text-green-700">Income Surplus After Mortgage (Monthly Surplus)</span>
                 </div>
                 <div class="flex items-center">
                     <span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
-                    <span class="font-medium text-red-500">Annual Leftover Value (Monthly) - Deficit</span>
+                    <span class="font-medium text-red-500">Income Deficit After Mortgage (Monthly Deficit)</span>
                 </div>
             </div>
         </div>
@@ -175,7 +176,7 @@
                 let html = '<table class="w-full text-sm">';
                 
                 // Table Header (Property Values)
-                html += '<thead><tr><th class="bg-gray-200 text-gray-700 sticky-col">Downpayment</th>';
+                html += '<thead><tr><th class="bg-gray-200 text-gray-700 sticky-col">Down Payment ↓<br>House Price →</th>';
                 propertyValues.forEach(val => {
                     html += `<th class="bg-gray-200 text-gray-700">${formatCurrency(val)}</th>`;
                 });
@@ -208,13 +209,18 @@
                             if (!isNaN(actualIncome)) {
                                 const leftover = actualIncome - requiredIncome;
                                 const monthlyLeftover = leftover / 12;
-                                leftoverContent = `Leftover: ${formatCurrency(leftover)} (${formatMonthly(monthlyLeftover)})`;
-                                leftoverClass = leftover >= 0 ? 'text-green-700 font-semibold' : 'text-red-500 font-semibold';
+                                if (leftover >= 0) {
+                                    leftoverContent = `Surplus: ${formatCurrency(leftover)} (${formatMonthly(monthlyLeftover)}/mo)`;
+                                    leftoverClass = 'text-green-700 font-semibold';
+                                } else {
+                                    leftoverContent = `Deficit: ${formatCurrency(Math.abs(leftover))} (${formatMonthly(Math.abs(monthlyLeftover))}/mo)`;
+                                    leftoverClass = 'text-red-500 font-semibold';
+                                }
                             }
                             
                             cellContent = `
-                                <div class="text-sm font-medium text-gray-800">${formatCurrency(result.mortgageAmount)}</div>
-                                <div class="text-xs text-gray-500">Req. Inc: ${formatCurrency(requiredIncome)}<br>(${formatMonthly(monthlyRequiredIncome)})</div>
+                                <div class="text-sm font-medium text-gray-800">Loan: ${formatCurrency(result.mortgageAmount)}</div>
+                                <div class="text-xs text-gray-500">Income Needed: ${formatCurrency(requiredIncome)}<br>(${formatMonthly(monthlyRequiredIncome)}/mo)</div>
                                 <div class="text-xs ${leftoverClass}">${leftoverContent}</div>
                             `;
                             cellClass = 'three-line-cell';
